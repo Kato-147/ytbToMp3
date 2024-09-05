@@ -1,4 +1,3 @@
-import logo from "./logo.svg";
 import "./App.css";
 import { useEffect, useState } from "react";
 import { fetch } from "./services/ApiRequest";
@@ -12,17 +11,25 @@ function App() {
   useEffect(() => {
     if (id) {
       const fetchData = () => {
-        let interval = setInterval(async function () {
+        let interval = setInterval(async function() {
+          setDisabled(true);
           const res = await fetch(id);
-          if (res.status === "200" && res.data.status === "ok") {
+          
+          if (res.status === 200 && res.data.status === "ok") {
             setDisabled(false);
             setRespone(res.data);
             clearInterval(interval);
+          } else if (res.status === 200 && res.data.status === "fail") {
+            alert("Invalid video ID");
+            setDisabled(false);
+            clearInterval(interval);
           }
+
         }, 1000);
-      };
+      }
+
+      fetchData();
     }
-    fetchData();
   }, [id]);
 
   useEffect(() => {
@@ -33,16 +40,23 @@ function App() {
 
   function extractValueFromQuery(query) {
     const parameter = "v";
-    const urlParams = new URLSearchParams(query);
-    const extractedId = urlParams.get(parameter);
-
-    if (extractedId) {
-      setId(extractedId); // Update state with extracted ID // Clear any previous error message
-    } else {
-      console.log(
-        'Invalid YouTube link. Please enter a valid link with parameter "v".'
-      );
-      // Set error message for invalid links
+    
+    try {
+      const url = new URL(query); // Parse the full URL
+      const urlParams = new URLSearchParams(url.search); // Get the query string part
+      const extractedId = urlParams.get(parameter);
+      
+      if (extractedId) {
+        setId(extractedId); // Update state with extracted ID
+        console.log("Extracted ID:", extractedId); // For debugging purposes
+      } else {
+        console.log(
+          'Invalid YouTube link. Please enter a valid link with parameter "v".'
+        );
+        // Set error message for invalid links
+      }
+    } catch (e) {
+      console.log("Error parsing URL. Please enter a valid URL.");
     }
   }
 
@@ -68,7 +82,10 @@ function App() {
         <span>It might take a moment to convert to video</span>
       </div>
       <button
-       onClick={() => extractValueFromQuery(link)}
+       onClick={() => { const text = link.split("=")[1];
+        if (text) {
+          setId(text);
+        }}}
        disabled={disabled}
        className={disabled ? 'btn-disabled' : ''}
        >Download</button>
